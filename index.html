@@ -13,6 +13,7 @@
         <link href="resources/photon-geocoder-autocomplete.min.css" rel="stylesheet">
         <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
         <link rel="stylesheet" href="./resources/qgis2web.css">
+        
         <style>
         html, body {
             background-color: #ffffff;
@@ -35,17 +36,129 @@
             background-color: rgba(255,255,255,.4) !important;
             padding: 2px !important;
         } 
-        </style>
-
-        <style>
         html, body, #map {
             width: 100%;
             height: 100%;
             padding: 0;
             margin: 0;
         }
+        
+        /* ========================================== */
+        /* === ESTILOS PERSONALIZADOS === */
+        /* ========================================== */
+        @media (max-width: 768px) {
+            .home-button, .measure-button {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 24px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                border-radius: 44px !important;
+            }
+            .coords-panel {
+                font-size: 11px !important;
+                padding: 6px 10px !important;
+                max-width: 85% !important;
+            }
+            .scale-text {
+                font-size: 11px !important;
+                padding: 4px 10px !important;
+            }
+            .toggle-coords-btn, .clear-measure-btn {
+                font-size: 11px !important;
+                padding: 4px 8px !important;
+            }
+            .measure-panel {
+                font-size: 11px !important;
+                padding: 8px 14px !important;
+                top: 60px !important;
+                min-width: 180px !important;
+            }
+        }
+        
+        /* ========================================== */
+        /* === PANEL DE MEDICIÓN CENTRADO === */
+        /* ========================================== */
+        .measure-panel {
+            position: absolute;
+            top: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.92);
+            color: #ffd966;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-family: monospace;
+            font-weight: bold;
+            z-index: 10003;
+            border: 1px solid #ffd966;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            white-space: nowrap;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+        
+        /* ========================================== */
+        /* === CONTROLES PERSONALIZADOS === */
+        /* ========================================== */
+        .custom-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10002;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .custom-controls .control-btn {
+            background-color: rgba(0,0,0,0.8);
+            color: #ffd966;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 20px;
+            border: 1px solid #ffd966;
+            transition: all 0.2s;
+            backdrop-filter: blur(2px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .custom-controls .control-btn:hover {
+            background-color: rgba(255, 217, 102, 0.9);
+            color: #000;
+            border-color: #000;
+        }
+        
+        .custom-controls .control-btn.active {
+            background-color: #ffd966;
+            color: #000;
+            border-color: #000;
+        }
+        
+        @media (max-width: 768px) {
+            .custom-controls .control-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 24px;
+            }
+            .measure-panel {
+                top: 65px;
+                font-size: 12px;
+                padding: 8px 16px;
+                min-width: 200px;
+            }
+        }
         </style>
-        <title></title>
+        <title>Mapa de Cuba - Recursos Naturales (Con Medición)</title>
     </head>
     <body>
         <div id="map">
@@ -54,9 +167,64 @@
                 <div id="popup-content"></div>
             </div>
         </div>
+        
+        <!-- ========================================== -->
+        <!-- === CONTROLES SUPERIOR DERECHA === -->
+        <!-- ========================================== -->
+        <div class="custom-controls">
+            <div id="boton-medir" class="control-btn" title="Medir distancia / área">
+                📏
+            </div>
+        </div>
+        
+        <!-- ========================================== -->
+        <!-- === PANEL DE MEDICIÓN (CENTRADO, DEBAJO DEL BOTÓN) === -->
+        <!-- ========================================== -->
+        <div id="measure-panel" class="measure-panel" style="display:none;">
+            📏 Medición: ---
+        </div>
+        
+        <!-- ========================================== -->
+        <!-- === PANEL DE COORDENADAS (INFERIOR IZQUIERDA) === -->
+        <!-- ========================================== -->
+        <div id="coordenadas-panel" class="coords-panel" style="position:absolute; bottom:10px; left:10px; background:rgba(0,0,0,0.85); color:#ffd966; padding:8px 15px; border-radius:8px; font-size:12px; font-family:monospace; z-index:10000; border-left:3px solid #ffd966; pointer-events:none; backdrop-filter:blur(2px);">
+            📍 Toca el mapa
+        </div>
+        
+        <!-- ========================================== -->
+        <!-- === BOTONES INFERIORES (CENTRO) === -->
+        <!-- ========================================== -->
+        <div style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:10001; display:flex; gap:8px; align-items:center;">
+            <button id="toggle-coords" class="toggle-coords-btn" style="background:rgba(0,0,0,0.85); color:#ffd966; border:1px solid #ffd966; padding:6px 12px; border-radius:20px; cursor:pointer; font-size:12px; font-family:monospace; backdrop-filter:blur(2px); transition:all 0.2s;">
+                🔄 Mostrar Cuba Norte
+            </button>
+            <button id="clear-measure" class="clear-measure-btn" style="background:rgba(0,0,0,0.85); color:#ffd966; border:1px solid #ffd966; padding:6px 12px; border-radius:20px; cursor:pointer; font-size:12px; font-family:monospace; backdrop-filter:blur(2px); transition:all 0.2s; display:none;">
+                🗑️ Limpiar
+            </button>
+        </div>
+        
+        <!-- ========================================== -->
+        <!-- === ESCALA Y BOTÓN INICIO (INFERIOR DERECHA) === -->
+        <!-- ========================================== -->
+        <div style="position:fixed; bottom:10px; right:10px; z-index:10001; display:flex; gap:8px; align-items:center;">
+            <div id="escala-texto" class="scale-text" style="background-color:rgba(0,0,0,0.75); padding:5px 12px; border-radius:6px; color:#ffd966; font-size:13px; font-family:monospace; pointer-events:none; font-weight:bold;">
+                📏 1:10.000
+            </div>
+            <div id="boton-inicio" class="home-button" style="background-color:rgba(0,0,0,0.8); color:#ffd966; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:36px; cursor:pointer; font-size:20px; border:1px solid #ffd966; transition:all 0.2s; backdrop-filter:blur(2px);">
+                🏠
+            </div>
+        </div>
+        
+        <!-- ========================================== -->
+        <!-- === SCRIPTS ORIGINALES DE QGIS2WEB === -->
+        <!-- ========================================== -->
         <script src="resources/qgis2web_expressions.js"></script>
-<script src="resources/proj4.js"></script>
-        <script>proj4.defs('EPSG:4326','+proj=longlat +datum=WGS84 +no_defs');</script>
+        <script src="resources/proj4.js"></script>
+        <script>
+            proj4.defs('EPSG:4326','+proj=longlat +datum=WGS84 +no_defs');
+            proj4.defs("EPSG:3795", "+proj=lcc +lat_1=23 +lat_2=21.7 +lat_0=22.35 +lon_0=-81 +x_0=500000 +y_0=280296.016 +ellps=clrk66 +towgs84=2.478,149.752,197.726,0.526356,0.497970,-0.500831,0.685238 +units=m +no_defs");
+            console.log("✅ Proyecciones definidas: EPSG:4326 y EPSG:3795");
+        </script>
         <script src="./resources/functions.js"></script>
         <script src="./resources/ol.js"></script>
         <script src="resources/horsey.min.js"></script>
@@ -64,10 +232,370 @@
         <script src="./resources/ol-layerswitcher.js"></script>
         <script src="resources/photon-geocoder-autocomplete.min.js"></script>
         <script src="resources/olms.js"></script>
-        <script src="layers/AREAS_PROTEGIDAS_1.js"></script><script src="layers/CUENCASDEINTERESNACIONAL_2.js"></script><script src="layers/YACIMIENTOSNOMETALICOS_3.js"></script><script src="layers/YACIMIENTOSMETALICOS_4.js"></script>
-        <script src="styles/AREAS_PROTEGIDAS_1_style.js"></script><script src="styles/CUENCASDEINTERESNACIONAL_2_style.js"></script><script src="styles/YACIMIENTOSNOMETALICOS_3_style.js"></script><script src="styles/YACIMIENTOSMETALICOS_4_style.js"></script>
+        <script src="layers/AREAS_PROTEGIDAS_1.js"></script>
+        <script src="layers/CUENCASDEINTERESNACIONAL_2.js"></script>
+        <script src="layers/YACIMIENTOSNOMETALICOS_3.js"></script>
+        <script src="layers/YACIMIENTOSMETALICOS_4.js"></script>
+        <script src="styles/AREAS_PROTEGIDAS_1_style.js"></script>
+        <script src="styles/CUENCASDEINTERESNACIONAL_2_style.js"></script>
+        <script src="styles/YACIMIENTOSNOMETALICOS_3_style.js"></script>
+        <script src="styles/YACIMIENTOSMETALICOS_4_style.js"></script>
         <script src="./layers/layers.js" type="text/javascript"></script> 
         <script src="./resources/Autolinker.min.js"></script>
         <script src="./resources/qgis2web.js"></script>        
+        
+        <!-- ========================================== -->
+        <!-- === PERSONALIZACIONES === -->
+        <!-- ========================================== -->
+        <script>
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        var mostrarCubaNorte = false;
+        var measureToolActive = false;
+        var drawInteraction = null;
+        var measureSource = null;
+        var measureLayer = null;
+        var currentMeasureType = 'line';
+        
+        // ============================================
+        // FUNCIONES DE FORMATEO
+        // ============================================
+        
+        function formatearGradosDecimales(valor, esLon) {
+            var direccion = '';
+            if (esLon) {
+                direccion = valor < 0 ? 'O' : 'E';
+            } else {
+                direccion = valor < 0 ? 'S' : 'N';
+            }
+            return Math.abs(valor).toFixed(5) + '° ' + direccion;
+        }
+        
+        function formatearGradosMinutosSegundos(valor, esLon) {
+            var absValor = Math.abs(valor);
+            var grados = Math.floor(absValor);
+            var minutos = Math.floor((absValor - grados) * 60);
+            var segundos = ((absValor - grados) * 60 - minutos) * 60;
+            
+            var direccion = '';
+            if (esLon) {
+                direccion = valor < 0 ? 'O' : 'E';
+            } else {
+                direccion = valor < 0 ? 'S' : 'N';
+            }
+            
+            return grados + '° ' + minutos + "' " + segundos.toFixed(1) + '" ' + direccion;
+        }
+        
+        function formatearNumero(valor) {
+            return Math.round(valor).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        function formatearDistancia(distancia) {
+            if (distancia >= 1000) {
+                return (distancia / 1000).toFixed(2) + ' km';
+            }
+            return distancia.toFixed(1) + ' m';
+        }
+        
+        function formatearArea(area) {
+            if (area >= 1000000) {
+                return (area / 1000000).toFixed(2) + ' km²';
+            } else if (area >= 10000) {
+                return (area / 10000).toFixed(2) + ' ha';
+            }
+            return area.toFixed(1) + ' m²';
+        }
+        
+        // ============================================
+        // FUNCIONES DE MEDICIÓN
+        // ============================================
+        
+        function crearHerramientaMedicion() {
+            measureSource = new ol.source.Vector();
+            measureLayer = new ol.layer.Vector({
+                source: measureSource,
+                style: new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: 'rgba(255, 217, 102, 0.2)'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#ffd966',
+                        width: 3
+                    }),
+                    image: new ol.style.Circle({
+                        radius: 5,
+                        fill: new ol.style.Fill({
+                            color: '#ffd966'
+                        })
+                    })
+                })
+            });
+            map.addLayer(measureLayer);
+        }
+        
+        function activarMedicion(tipo) {
+            if (measureToolActive) {
+                desactivarMedicion();
+            }
+            
+            currentMeasureType = tipo;
+            measureToolActive = true;
+            
+            measureSource.clear();
+            document.getElementById('measure-panel').style.display = 'none';
+            document.getElementById('clear-measure').style.display = 'none';
+            
+            if (drawInteraction) {
+                map.removeInteraction(drawInteraction);
+            }
+            
+            drawInteraction = new ol.interaction.Draw({
+                source: measureSource,
+                type: tipo === 'line' ? 'LineString' : 'Polygon',
+                style: new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: 'rgba(255, 217, 102, 0.2)'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#ffd966',
+                        width: 3
+                    }),
+                    image: new ol.style.Circle({
+                        radius: 5,
+                        fill: new ol.style.Fill({
+                            color: '#ffd966'
+                        })
+                    })
+                })
+            });
+            
+            drawInteraction.on('drawend', function(event) {
+                var geometry = event.feature.getGeometry();
+                var output;
+                
+                if (tipo === 'line') {
+                    var length = ol.sphere.getLength(geometry, {projection: map.getView().getProjection()});
+                    output = '📏 ' + formatearDistancia(length);
+                } else {
+                    var area = ol.sphere.getArea(geometry, {projection: map.getView().getProjection()});
+                    output = '📐 ' + formatearArea(area);
+                }
+                
+                var panel = document.getElementById('measure-panel');
+                panel.innerHTML = output;
+                panel.style.display = 'block';
+                document.getElementById('clear-measure').style.display = 'inline-block';
+                
+                // Ocultar después de 4 segundos
+                setTimeout(function() {
+                    if (panel.style.display === 'block') {
+                        panel.style.opacity = '0.6';
+                        setTimeout(function() {
+                            if (panel.style.display === 'block') {
+                                panel.style.display = 'none';
+                                panel.style.opacity = '1';
+                            }
+                        }, 1500);
+                    }
+                }, 4000);
+            });
+            
+            map.addInteraction(drawInteraction);
+            
+            var btnMedir = document.getElementById('boton-medir');
+            if (btnMedir) {
+                btnMedir.classList.add('active');
+            }
+            
+            map.getTargetElement().style.cursor = 'crosshair';
+            console.log("📏 Herramienta de medición activada:", tipo);
+        }
+        
+        function desactivarMedicion() {
+            if (drawInteraction) {
+                map.removeInteraction(drawInteraction);
+                drawInteraction = null;
+            }
+            measureToolActive = false;
+            
+            var btnMedir = document.getElementById('boton-medir');
+            if (btnMedir) {
+                btnMedir.classList.remove('active');
+            }
+            
+            map.getTargetElement().style.cursor = '';
+            console.log("📏 Herramienta de medición desactivada");
+        }
+        
+        function limpiarMediciones() {
+            if (measureSource) {
+                measureSource.clear();
+            }
+            document.getElementById('measure-panel').style.display = 'none';
+            document.getElementById('clear-measure').style.display = 'none';
+            
+            if (measureToolActive) {
+                desactivarMedicion();
+            }
+        }
+        
+        function mostrarMenuMedicion() {
+            var opciones = confirm("Selecciona tipo de medición:\n\nOK → Medir distancia (línea)\nCancelar → Medir área (polígono)");
+            
+            if (opciones) {
+                activarMedicion('line');
+            } else {
+                activarMedicion('area');
+            }
+        }
+        
+        // ============================================
+        // ACTUALIZAR PANEL DE COORDENADAS
+        // ============================================
+        
+        function actualizarPanelCoordenadas(lon, lat) {
+            var panel = document.getElementById('coordenadas-panel');
+            var toggleBtn = document.getElementById('toggle-coords');
+            
+            if (mostrarCubaNorte) {
+                try {
+                    var cubaCoords = proj4('EPSG:4326', 'EPSG:3795', [lon, lat]);
+                    
+                    panel.innerHTML = 
+                        '🇨🇺 <strong style="color:#ffaa33;">EPSG:3795 (Cuba Norte)</strong><br>' +
+                        'X: ' + formatearNumero(cubaCoords[0]) + ' m<br>' +
+                        'Y: ' + formatearNumero(cubaCoords[1]) + ' m<br>' +
+                        '<span style="font-size:10px; color:#aaa;">🌐 WGS84: ' + 
+                        formatearGradosDecimales(lon, true) + ', ' + 
+                        formatearGradosDecimales(lat, false) + '</span>';
+                    
+                    if (toggleBtn) toggleBtn.innerHTML = '🔄 Mostrar WGS84';
+                    
+                } catch(e) {
+                    console.error("Error conversión a Cuba Norte:", e);
+                    panel.innerHTML = '❌ Error en conversión a EPSG:3795';
+                }
+            } else {
+                panel.innerHTML = 
+                    '📍 <strong style="color:#ffaa33;">WGS84 (EPSG:4326)</strong><br>' +
+                    '🗺️ Grados Decimales:<br>' +
+                    'Longitud: ' + formatearGradosDecimales(lon, true) + '<br>' +
+                    'Latitud: ' + formatearGradosDecimales(lat, false) + '<br>' +
+                    '<span style="font-size:10px; color:#aaa;">📐 Grados, Minutos, Segundos:<br>' +
+                    formatearGradosMinutosSegundos(lon, true) + ', ' + 
+                    formatearGradosMinutosSegundos(lat, false) + '</span>';
+                
+                if (toggleBtn) toggleBtn.innerHTML = '🔄 Mostrar Cuba Norte';
+            }
+        }
+        
+        // ============================================
+        // INICIALIZACIÓN DEL MAPA
+        // ============================================
+        
+        function inicializarMapa() {
+            if (typeof map === 'undefined') {
+                setTimeout(inicializarMapa, 500);
+                return;
+            }
+            
+            console.log("✅ Mapa inicializado en WGS84 (EPSG:4326)");
+            
+            crearHerramientaMedicion();
+            desactivarMedicion();
+            
+            map.on('click', function(evt) {
+                if (measureToolActive) return;
+                
+                var coordenadas = evt.coordinate;
+                var lon = coordenadas[0];
+                var lat = coordenadas[1];
+                
+                actualizarPanelCoordenadas(lon, lat);
+            });
+            
+            var btnMedir = document.getElementById('boton-medir');
+            if (btnMedir) {
+                btnMedir.onclick = function() {
+                    if (measureToolActive) {
+                        desactivarMedicion();
+                        limpiarMediciones();
+                    } else {
+                        mostrarMenuMedicion();
+                    }
+                };
+            }
+            
+            var clearBtn = document.getElementById('clear-measure');
+            if (clearBtn) {
+                clearBtn.onclick = function() {
+                    limpiarMediciones();
+                };
+            }
+            
+            var toggleBtn = document.getElementById('toggle-coords');
+            if (toggleBtn) {
+                toggleBtn.onclick = function() {
+                    mostrarCubaNorte = !mostrarCubaNorte;
+                    var center = map.getView().getCenter();
+                    if (center) {
+                        actualizarPanelCoordenadas(center[0], center[1]);
+                    }
+                };
+            }
+            
+            var btn = document.getElementById('boton-inicio');
+            if (btn) {
+                btn.onclick = function() {
+                    map.getView().setCenter([-79.0, 21.5]);
+                    map.getView().setZoom(6);
+                    actualizarPanelCoordenadas(-79.0, 21.5);
+                };
+            }
+            
+            var escalaDiv = document.getElementById('escala-texto');
+            if (escalaDiv && map.getView()) {
+                function actualizarEscala() {
+                    try {
+                        var zoom = map.getView().getZoom();
+                        var texto = '';
+                        if (zoom >= 18) texto = '📏 1:1.000';
+                        else if (zoom >= 17) texto = '📏 1:2.000';
+                        else if (zoom >= 16) texto = '📏 1:4.000';
+                        else if (zoom >= 15) texto = '📏 1:8.000';
+                        else if (zoom >= 14) texto = '📏 1:15.000';
+                        else if (zoom >= 13) texto = '📏 1:30.000';
+                        else if (zoom >= 12) texto = '📏 1:60.000';
+                        else if (zoom >= 11) texto = '📏 1:120.000';
+                        else if (zoom >= 10) texto = '📏 1:250.000';
+                        else if (zoom >= 9) texto = '📏 1:500.000';
+                        else if (zoom >= 8) texto = '📏 1:1.000.000';
+                        else if (zoom >= 7) texto = '📏 1:2.000.000';
+                        else if (zoom >= 6) texto = '📏 1:4.000.000';
+                        else texto = '📏 1:20.000.000';
+                        
+                        escalaDiv.innerHTML = texto;
+                    } catch(e) {}
+                }
+                
+                actualizarEscala();
+                map.getView().on('change:resolution', actualizarEscala);
+            }
+            
+            document.getElementById('coordenadas-panel').innerHTML = 
+                '📍 Toca el mapa - WGS84 (EPSG:4326)<br>' +
+                '🔄 Botón inferior: Cuba Norte | 📏 Botón arriba derecha: Medir';
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(inicializarMapa, 800);
+            });
+        } else {
+            setTimeout(inicializarMapa, 800);
+        }
+        </script>
     </body>
 </html>
