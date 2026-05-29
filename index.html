@@ -3,7 +3,6 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <!-- viewport ajustado para mejor comportamiento táctil -->
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
@@ -45,31 +44,60 @@
         }
         
         /* ========================================== */
-        /* === REPARACIÓN PARA ANDROID: MEJORAR BÚSQUEDA TÁCTIL === */
+        /* === REPARACIÓN PARA ANDROID: BÚSQUEDA === */
         /* ========================================== */
         
-        /* Asegurar que el campo de búsqueda recibe el foco táctil correctamente */
+        /* Forzar que el contenedor de búsqueda sea táctil */
+        .search-layer {
+            z-index: 10010 !important;
+        }
+        
         .search-layer-input-search {
             -webkit-appearance: textfield !important;
             appearance: textfield !important;
             pointer-events: auto !important;
             touch-action: manipulation !important;
+            font-size: 14px !important;
         }
         
-        /* Aumentar área táctil del botón de búsqueda */
-        .search-layer .search-layer-button,
-        .gcd-gl-button {
+        /* Asegurar que el dropdown de autocompletado sea visible en táctil */
+        .horsey, .search-layer-autocomplete {
+            z-index: 10020 !important;
+            max-height: 200px !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        
+        .horsey ul, .search-layer-autocomplete ul {
+            max-height: 200px !important;
+            overflow-y: auto !important;
+        }
+        
+        .horsey li, .search-layer-autocomplete li {
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+            min-height: 36px !important;
+            touch-action: manipulation !important;
+        }
+        
+        /* Forzar que los resultados sean clickeables */
+        .horsey li a, .search-layer-autocomplete li a {
+            display: block !important;
+            width: 100% !important;
+            touch-action: manipulation !important;
+        }
+        
+        /* Mejorar el botón de búsqueda */
+        .search-layer-button, .gcd-gl-button {
             min-width: 44px !important;
             min-height: 44px !important;
             touch-action: manipulation !important;
         }
         
-        /* Evitar que el teclado oculte el campo */
+        /* Evitar zoom en foco */
         @media (max-width: 768px) {
             .search-layer-input-search:focus {
-                font-size: 16px !important; /* Evita zoom automático en iOS/Android */
-                position: relative;
-                z-index: 10010;
+                font-size: 16px !important;
             }
         }
         
@@ -341,73 +369,76 @@
         <script src="./resources/qgis2web.js"></script>        
         
         <!-- ========================================== -->
-        <!-- === REPARACIÓN PARA ANDROID: FORZAR BÚSQUEDA TÁCTIL === -->
+        <!-- === REPARACIÓN PARA ANDROID: FORZAR BÚSQUEDA === -->
         <!-- ========================================== -->
         <script>
         (function() {
-            // Función para mejorar la búsqueda en dispositivos táctiles
-            function mejorarBusquedaTouch() {
-                // Esperar a que el DOM esté listo
+            // Esta función fuerza que la búsqueda funcione en táctil
+            function repararBusquedaAndroid() {
                 setTimeout(function() {
-                    // Buscar el campo de entrada de búsqueda
-                    var searchInput = document.querySelector('.search-layer-input-search');
-                    var searchButton = document.querySelector('.search-layer-button, .gcd-gl-button');
+                    var searchInput = document.querySelector('.search-layer-input-search, .gcd-gl-input');
                     
                     if (searchInput) {
-                        console.log("🔍 Campo de búsqueda encontrado - Aplicando mejoras táctiles");
+                        console.log("🔍 Reparando búsqueda para Android...");
                         
-                        // Forzar que el campo sea editable en táctil
-                        searchInput.setAttribute('inputmode', 'text');
+                        // Forzar atributos
                         searchInput.setAttribute('autocomplete', 'off');
-                        
-                        // Eliminar cualquier atributo que pueda bloquear el táctil
-                        searchInput.removeAttribute('readonly');
-                        searchInput.removeAttribute('disabled');
-                        
-                        // Asegurar que el pointer-events esté activo
+                        searchInput.setAttribute('autocorrect', 'off');
+                        searchInput.setAttribute('autocapitalize', 'none');
+                        searchInput.setAttribute('spellcheck', 'false');
                         searchInput.style.pointerEvents = 'auto';
-                        searchInput.style.touchAction = 'manipulation';
                         
-                        // Para Android: asegurar que al tocar se abra el teclado
-                        searchInput.addEventListener('touchstart', function(e) {
-                            // Pequeño retraso para permitir que el evento de click también funcione
-                            setTimeout(function() {
-                                searchInput.focus();
-                            }, 10);
-                        }, { passive: false });
+                        // Eliminar eventos anteriores y re-asignar
+                        var oldInput = searchInput;
+                        var newInput = searchInput.cloneNode(true);
+                        oldInput.parentNode.replaceChild(newInput, oldInput);
+                        searchInput = newInput;
                         
-                        // También manejar el evento click para escritorio
-                        searchInput.addEventListener('click', function(e) {
-                            searchInput.focus();
+                        // Forzar evento input para activar Horsey
+                        searchInput.addEventListener('input', function(e) {
+                            console.log("Input detectado:", this.value);
+                            // Disparar evento personalizado para Horsey
+                            var event = new Event('input', { bubbles: true });
+                            this.dispatchEvent(event);
                         });
+                        
+                        searchInput.addEventListener('focus', function(e) {
+                            console.log("Focus en búsqueda");
+                            // Si ya hay texto, forzar la búsqueda
+                            if (this.value.length > 0) {
+                                var event = new Event('input', { bubbles: true });
+                                this.dispatchEvent(event);
+                            }
+                        });
+                        
+                        searchInput.addEventListener('touchstart', function(e) {
+                            console.log("Touch en búsqueda");
+                            // No prevenir para permitir foco
+                        }, { passive: true });
+                        
+                        console.log("✅ Búsqueda reparada para Android");
+                    } else {
+                        console.log("⏳ Buscando campo de búsqueda...");
+                        setTimeout(repararBusquedaAndroid, 500);
                     }
-                    
-                    if (searchButton) {
-                        console.log("🔍 Botón de búsqueda encontrado");
-                        searchButton.style.touchAction = 'manipulation';
-                        searchButton.style.pointerEvents = 'auto';
-                    }
-                    
-                    // También buscar cualquier contenedor de búsqueda adicional
-                    var searchContainers = document.querySelectorAll('.search-layer, .gcd-gl-control, .ol-search-layer');
-                    searchContainers.forEach(function(container) {
-                        container.style.touchAction = 'manipulation';
-                        container.style.pointerEvents = 'auto';
-                    });
-                    
                 }, 1000);
             }
             
-            // Ejecutar cuando el DOM esté listo
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', mejorarBusquedaTouch);
-            } else {
-                mejorarBusquedaTouch();
+            // También asegurar que el mapa esté listo
+            function esperarMapa() {
+                if (typeof map !== 'undefined') {
+                    console.log("Mapa listo - reparando búsqueda");
+                    repararBusquedaAndroid();
+                } else {
+                    setTimeout(esperarMapa, 300);
+                }
             }
             
-            // También ejecutar después de que qgis2web.js termine de cargar
-            setTimeout(mejorarBusquedaTouch, 2000);
-            setTimeout(mejorarBusquedaTouch, 3000);
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', esperarMapa);
+            } else {
+                esperarMapa();
+            }
         })();
         </script>
         
