@@ -44,17 +44,23 @@
         }
         
         /* ========================================== */
-        /* === BOTÓN DE BÚSQUEDA FLOTANTE (PARA ANDROID) === */
+        /* === OCULTAR BÚSQUEDA ORIGINAL DE QGIS2WEB === */
+        /* ========================================== */
+        .search-layer, .gcd-gl-control, .ol-search-layer {
+            display: none !important;
+        }
+        
+        /* ========================================== */
+        /* === BÚSQUEDA UNIFICADA (DEBAJO DE CONTROLES ZOOM) === */
         /* ========================================== */
         .custom-search-container {
             position: absolute;
-            top: 10px;
+            top: 80px;
             left: 10px;
             z-index: 10020;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            max-width: calc(100% - 100px);
         }
         
         .custom-search-toggle {
@@ -71,6 +77,13 @@
             align-items: center;
             gap: 8px;
             width: fit-content;
+            transition: all 0.2s;
+        }
+        
+        .custom-search-toggle:hover {
+            background: rgba(255, 217, 102, 0.9);
+            color: #000;
+            border-color: #000;
         }
         
         .custom-search-panel {
@@ -80,24 +93,27 @@
             display: none;
             flex-direction: column;
             gap: 10px;
-            min-width: 250px;
+            min-width: 280px;
             backdrop-filter: blur(4px);
             border: 1px solid #ffd966;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         
         .custom-search-panel input {
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             border: 1px solid #ffd966;
             border-radius: 25px;
             padding: 12px 16px;
             font-size: 16px;
             color: #333;
             touch-action: manipulation;
+            width: calc(100% - 32px);
         }
         
         .custom-search-panel input:focus {
             outline: none;
             border-color: #ffaa33;
+            background: #fff;
         }
         
         .custom-search-results {
@@ -113,19 +129,20 @@
             cursor: pointer;
             touch-action: manipulation;
             font-size: 14px;
+            transition: background 0.1s;
+        }
+        
+        .custom-search-results div:hover {
+            background: rgba(255,217,102,0.2);
         }
         
         .custom-search-results div:active {
-            background: rgba(255,217,102,0.3);
+            background: rgba(255,217,102,0.4);
         }
         
-        /* Ocultar búsqueda original en móviles */
-        @media (max-width: 768px) {
-            .search-layer, .gcd-gl-control, .ol-search-layer {
-                display: none !important;
-            }
-        }
-        
+        /* ========================================== */
+        /* === ESTILOS PERSONALIZADOS === */
+        /* ========================================== */
         @media (max-width: 768px) {
             .home-button, .measure-button {
                 width: 44px !important;
@@ -154,6 +171,16 @@
                 padding: 8px 14px !important;
                 top: 60px !important;
                 min-width: 180px !important;
+            }
+            .custom-search-toggle {
+                padding: 6px 14px;
+                font-size: 13px;
+            }
+            .custom-search-panel {
+                min-width: 260px;
+            }
+            .custom-search-container {
+                top: 90px;
             }
         }
         
@@ -315,7 +342,7 @@
         </div>
         
         <!-- ========================================== -->
-        <!-- === BÚSQUEDA ALTERNATIVA PARA ANDROID === -->
+        <!-- === BÚSQUEDA UNIFICADA (DEBAJO DE ZOOM) === -->
         <!-- ========================================== -->
         <div class="custom-search-container">
             <div id="custom-search-toggle" class="custom-search-toggle">
@@ -403,74 +430,19 @@
         <script src="./resources/qgis2web.js"></script>        
         
         <!-- ========================================== -->
-        <!-- === BÚSQUEDA ALTERNATIVA: EXTRAER DATOS DE CAPAS === -->
+        <!-- === FUNCIONALIDAD COMPLETA === -->
         <!-- ========================================== -->
         <script>
-        // Variables para búsqueda alternativa
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        var mostrarCubaNorte = false;
+        var measureToolActive = false;
+        var drawInteraction = null;
+        var measureSource = null;
+        var measureLayer = null;
+        var currentMeasureType = 'line';
         var searchData = [];
-        var searchLayerNames = [];
-        
-        // Extraer nombres de todas las capas para búsqueda
-        function extraerDatosBusqueda() {
-            console.log("🔍 Extrayendo datos para búsqueda...");
-            
-            // Verificar si existen las capas globales
-            if (typeof map !== 'undefined' && map.getLayers) {
-                var layers = map.getLayers().getArray();
-                layers.forEach(function(layer) {
-                    if (layer.getSource && layer.getSource().getFeatures) {
-                        var source = layer.getSource();
-                        var features = source.getFeatures();
-                        var layerName = layer.get('name') || layer.get('title') || 'Capa';
-                        
-                        features.forEach(function(feature) {
-                            var props = feature.getProperties();
-                            // Buscar campos que puedan contener nombres
-                            var posiblesCampos = ['NOMBRE', 'NOMBRE_1', 'name', 'Name', 'NOM', 'DESCRIP', 'YACIMIENTO', 'CUENCA', 'AREA'];
-                            var nombre = null;
-                            
-                            for (var i = 0; i < posiblesCampos.length; i++) {
-                                if (props[posiblesCampos[i]]) {
-                                    nombre = props[posiblesCampos[i]];
-                                    break;
-                                }
-                            }
-                            
-                            if (nombre && typeof nombre === 'string') {
-                                searchData.push({
-                                    nombre: nombre,
-                                    geometry: feature.getGeometry(),
-                                    capa: layerName
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-            
-            console.log("✅ Datos extraídos:", searchData.length, "elementos");
-        }
-        
-        // Función de búsqueda
-        function buscarEnCapas(texto) {
-            if (!texto || texto.length < 2) return [];
-            var textoLower = texto.toLowerCase();
-            return searchData.filter(function(item) {
-                return item.nombre.toLowerCase().includes(textoLower);
-            }).slice(0, 20); // Máximo 20 resultados
-        }
-        
-        // Centrar mapa en una geometría
-        function centrarEnGeometria(geometry) {
-            if (geometry.getType() === 'Point') {
-                var coords = geometry.getCoordinates();
-                map.getView().setCenter(coords);
-                map.getView().setZoom(12);
-            } else {
-                var extent = geometry.getExtent();
-                map.getView().fit(extent, { padding: [50, 50, 50, 50] });
-            }
-        }
         
         // ============================================
         // FUNCIONES DE FORMATEO
@@ -523,15 +495,69 @@
         }
         
         // ============================================
-        // FUNCIONES DE MEDICIÓN
+        // EXTRACCIÓN DE DATOS PARA BÚSQUEDA
         // ============================================
         
-        var mostrarCubaNorte = false;
-        var measureToolActive = false;
-        var drawInteraction = null;
-        var measureSource = null;
-        var measureLayer = null;
-        var currentMeasureType = 'line';
+        function extraerDatosBusqueda() {
+            console.log("🔍 Extrayendo datos para búsqueda...");
+            
+            if (typeof map !== 'undefined' && map.getLayers) {
+                var layers = map.getLayers().getArray();
+                layers.forEach(function(layer) {
+                    if (layer.getSource && layer.getSource().getFeatures) {
+                        var source = layer.getSource();
+                        var features = source.getFeatures();
+                        var layerName = layer.get('name') || layer.get('title') || 'Capa';
+                        
+                        features.forEach(function(feature) {
+                            var props = feature.getProperties();
+                            var posiblesCampos = ['NOMBRE', 'NOMBRE_1', 'name', 'Name', 'NOM', 'DESCRIP', 'YACIMIENTO', 'CUENCA', 'AREA'];
+                            var nombre = null;
+                            
+                            for (var i = 0; i < posiblesCampos.length; i++) {
+                                if (props[posiblesCampos[i]]) {
+                                    nombre = props[posiblesCampos[i]];
+                                    break;
+                                }
+                            }
+                            
+                            if (nombre && typeof nombre === 'string' && nombre.length > 0) {
+                                searchData.push({
+                                    nombre: nombre,
+                                    geometry: feature.getGeometry(),
+                                    capa: layerName
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+            
+            console.log("✅ Datos extraídos:", searchData.length, "elementos");
+        }
+        
+        function buscarEnCapas(texto) {
+            if (!texto || texto.length < 2) return [];
+            var textoLower = texto.toLowerCase();
+            return searchData.filter(function(item) {
+                return item.nombre.toLowerCase().includes(textoLower);
+            }).slice(0, 20);
+        }
+        
+        function centrarEnGeometria(geometry) {
+            if (geometry.getType() === 'Point') {
+                var coords = geometry.getCoordinates();
+                map.getView().setCenter(coords);
+                map.getView().setZoom(12);
+            } else {
+                var extent = geometry.getExtent();
+                map.getView().fit(extent, { padding: [50, 50, 50, 50] });
+            }
+        }
+        
+        // ============================================
+        // FUNCIONES DE MEDICIÓN
+        // ============================================
         
         function crearHerramientaMedicion() {
             measureSource = new ol.source.Vector();
@@ -710,6 +736,72 @@
         }
         
         // ============================================
+        // CONFIGURAR BÚSQUEDA UNIFICADA
+        // ============================================
+        
+        function configurarBusqueda() {
+            var toggleBtn = document.getElementById('custom-search-toggle');
+            var panel = document.getElementById('custom-search-panel');
+            var searchInput = document.getElementById('custom-search-input');
+            var resultsDiv = document.getElementById('custom-search-results');
+            
+            if (!toggleBtn || !panel) return;
+            
+            toggleBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (panel.style.display === 'flex') {
+                    panel.style.display = 'none';
+                } else {
+                    panel.style.display = 'flex';
+                    setTimeout(function() { searchInput.focus(); }, 100);
+                }
+            });
+            
+            searchInput.addEventListener('input', function(e) {
+                var texto = this.value;
+                if (texto.length < 2) {
+                    resultsDiv.innerHTML = '';
+                    return;
+                }
+                
+                var resultados = buscarEnCapas(texto);
+                resultsDiv.innerHTML = '';
+                
+                if (resultados.length === 0) {
+                    resultsDiv.innerHTML = '<div style="color:#aaa; text-align:center;">No hay resultados</div>';
+                } else {
+                    resultados.forEach(function(res) {
+                        var div = document.createElement('div');
+                        div.innerHTML = res.nombre + ' <span style="font-size:10px; color:#aaa;">(' + res.capa + ')</span>';
+                        div.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            centrarEnGeometria(res.geometry);
+                            panel.style.display = 'none';
+                            searchInput.value = '';
+                            resultsDiv.innerHTML = '';
+                        });
+                        resultsDiv.appendChild(div);
+                    });
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (!panel.contains(e.target) && e.target !== toggleBtn) {
+                    panel.style.display = 'none';
+                }
+            });
+            
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && resultsDiv.firstChild) {
+                    var firstResult = resultsDiv.firstChild;
+                    if (firstResult && firstResult.click) {
+                        firstResult.click();
+                    }
+                }
+            });
+        }
+        
+        // ============================================
         // INICIALIZACIÓN DEL MAPA
         // ============================================
         
@@ -724,8 +816,10 @@
             crearHerramientaMedicion();
             desactivarMedicion();
             
-            // Extraer datos para búsqueda después de que las capas estén cargadas
-            setTimeout(extraerDatosBusqueda, 1000);
+            setTimeout(function() {
+                extraerDatosBusqueda();
+                configurarBusqueda();
+            }, 1000);
             
             map.on('click', function(evt) {
                 if (measureToolActive) return;
@@ -807,63 +901,7 @@
             
             document.getElementById('coordenadas-panel').innerHTML = 
                 '📍 Toca el mapa - WGS84 (EPSG:4326)<br>' +
-                '🔍 Botón izquierdo superior: Búsqueda | 📏 Botón derecho: Medir';
-                
-            // Configurar búsqueda alternativa
-            configurarBusquedaAlternativa();
-        }
-        
-        function configurarBusquedaAlternativa() {
-            var toggleBtn = document.getElementById('custom-search-toggle');
-            var panel = document.getElementById('custom-search-panel');
-            var searchInput = document.getElementById('custom-search-input');
-            var resultsDiv = document.getElementById('custom-search-results');
-            
-            if (!toggleBtn || !panel) return;
-            
-            toggleBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (panel.style.display === 'flex') {
-                    panel.style.display = 'none';
-                } else {
-                    panel.style.display = 'flex';
-                    searchInput.focus();
-                }
-            });
-            
-            searchInput.addEventListener('input', function(e) {
-                var texto = this.value;
-                if (texto.length < 2) {
-                    resultsDiv.innerHTML = '';
-                    return;
-                }
-                
-                var resultados = buscarEnCapas(texto);
-                resultsDiv.innerHTML = '';
-                
-                if (resultados.length === 0) {
-                    resultsDiv.innerHTML = '<div style="color:#aaa; text-align:center;">No hay resultados</div>';
-                } else {
-                    resultados.forEach(function(res) {
-                        var div = document.createElement('div');
-                        div.innerHTML = res.nombre + ' <span style="font-size:10px; color:#aaa;">(' + res.capa + ')</span>';
-                        div.addEventListener('click', function() {
-                            centrarEnGeometria(res.geometry);
-                            panel.style.display = 'none';
-                            searchInput.value = '';
-                            resultsDiv.innerHTML = '';
-                        });
-                        resultsDiv.appendChild(div);
-                    });
-                }
-            });
-            
-            // Cerrar panel al tocar fuera
-            document.addEventListener('click', function(e) {
-                if (!panel.contains(e.target) && e.target !== toggleBtn) {
-                    panel.style.display = 'none';
-                }
-            });
+                '🔍 Buscar (izquierda abajo del zoom) | 📏 Medir (derecha)';
         }
         
         if (document.readyState === 'loading') {
