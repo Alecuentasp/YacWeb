@@ -144,6 +144,81 @@
             border-color: #000;
         }
         
+        /* ========================================== */
+        /* === CONTROL DE CAPAS MÁS PEQUEÑO (EN SU LUGAR) === */
+        /* ========================================== */
+        
+        /* Botón del layer switcher */
+        .layer-switcher button {
+            width: 28px !important;
+            height: 28px !important;
+            background-size: 16px !important;
+            background-position: center !important;
+        }
+        
+        /* Panel desplegable */
+        .layer-switcher .panel {
+            max-width: 180px !important;
+            font-size: 11px !important;
+        }
+        
+        /* Grupos de capas */
+        .layer-switcher .group {
+            font-size: 11px !important;
+            padding: 2px 4px !important;
+        }
+        
+        /* Cada capa */
+        .layer-switcher .layer {
+            font-size: 11px !important;
+            padding: 2px 4px 2px 20px !important;
+        }
+        
+        /* Texto de las capas */
+        .layer-switcher .layer label,
+        .layer-switcher .group label {
+            font-size: 11px !important;
+            font-weight: normal !important;
+        }
+        
+        /* Checkboxes */
+        .layer-switcher input[type="checkbox"] {
+            width: 12px !important;
+            height: 12px !important;
+            margin-right: 6px !important;
+            transform: scale(0.9) !important;
+        }
+        
+        /* Iconos de leyenda */
+        .layer-switcher .layer .legend {
+            width: 16px !important;
+            height: 16px !important;
+        }
+        
+        /* Título del panel */
+        .layer-switcher .panel h3 {
+            font-size: 12px !important;
+            padding: 4px 8px !important;
+            margin: 0 !important;
+        }
+        
+        @media (max-width: 768px) {
+            .layer-switcher button {
+                width: 34px !important;
+                height: 34px !important;
+            }
+            
+            .layer-switcher .panel {
+                max-width: 160px !important;
+                font-size: 10px !important;
+            }
+            
+            .layer-switcher .layer label,
+            .layer-switcher .group label {
+                font-size: 10px !important;
+            }
+        }
+        
         @media (max-width: 768px) {
             .custom-controls .control-btn {
                 width: 44px;
@@ -158,7 +233,7 @@
             }
         }
         </style>
-        <title>Mapa de Cuba - Recursos Naturales (Con Medición)</title>
+        <title>Mapa de Cuba - Recursos Naturales (WGS84)</title>
     </head>
     <body>
         <div id="map">
@@ -178,7 +253,7 @@
         </div>
         
         <!-- ========================================== -->
-        <!-- === PANEL DE MEDICIÓN (CENTRADO, DEBAJO DEL BOTÓN) === -->
+        <!-- === PANEL DE MEDICIÓN (CENTRADO) === -->
         <!-- ========================================== -->
         <div id="measure-panel" class="measure-panel" style="display:none;">
             📏 Medición: ---
@@ -245,7 +320,7 @@
         <script src="./resources/qgis2web.js"></script>        
         
         <!-- ========================================== -->
-        <!-- === PERSONALIZACIONES === -->
+        <!-- === PERSONALIZACIONES COMPLETAS === -->
         <!-- ========================================== -->
         <script>
         // ============================================
