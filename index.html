@@ -44,66 +44,88 @@
         }
         
         /* ========================================== */
-        /* === REPARACIÓN PARA ANDROID: BÚSQUEDA === */
+        /* === BOTÓN DE BÚSQUEDA FLOTANTE (PARA ANDROID) === */
         /* ========================================== */
-        
-        /* Forzar que el contenedor de búsqueda sea táctil */
-        .search-layer {
-            z-index: 10010 !important;
+        .custom-search-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10020;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: calc(100% - 100px);
         }
         
-        .search-layer-input-search {
-            -webkit-appearance: textfield !important;
-            appearance: textfield !important;
-            pointer-events: auto !important;
-            touch-action: manipulation !important;
-            font-size: 14px !important;
+        .custom-search-toggle {
+            background: rgba(0,0,0,0.85);
+            color: #ffd966;
+            border: 1px solid #ffd966;
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
         }
         
-        /* Asegurar que el dropdown de autocompletado sea visible en táctil */
-        .horsey, .search-layer-autocomplete {
-            z-index: 10020 !important;
-            max-height: 200px !important;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
+        .custom-search-panel {
+            background: rgba(0,0,0,0.95);
+            border-radius: 12px;
+            padding: 12px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 250px;
+            backdrop-filter: blur(4px);
+            border: 1px solid #ffd966;
         }
         
-        .horsey ul, .search-layer-autocomplete ul {
-            max-height: 200px !important;
-            overflow-y: auto !important;
+        .custom-search-panel input {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #ffd966;
+            border-radius: 25px;
+            padding: 12px 16px;
+            font-size: 16px;
+            color: #333;
+            touch-action: manipulation;
         }
         
-        .horsey li, .search-layer-autocomplete li {
-            padding: 8px 12px !important;
-            font-size: 14px !important;
-            min-height: 36px !important;
-            touch-action: manipulation !important;
+        .custom-search-panel input:focus {
+            outline: none;
+            border-color: #ffaa33;
         }
         
-        /* Forzar que los resultados sean clickeables */
-        .horsey li a, .search-layer-autocomplete li a {
-            display: block !important;
-            width: 100% !important;
-            touch-action: manipulation !important;
+        .custom-search-results {
+            max-height: 300px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
-        /* Mejorar el botón de búsqueda */
-        .search-layer-button, .gcd-gl-button {
-            min-width: 44px !important;
-            min-height: 44px !important;
-            touch-action: manipulation !important;
+        .custom-search-results div {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,217,102,0.3);
+            color: #ffd966;
+            cursor: pointer;
+            touch-action: manipulation;
+            font-size: 14px;
         }
         
-        /* Evitar zoom en foco */
+        .custom-search-results div:active {
+            background: rgba(255,217,102,0.3);
+        }
+        
+        /* Ocultar búsqueda original en móviles */
         @media (max-width: 768px) {
-            .search-layer-input-search:focus {
-                font-size: 16px !important;
+            .search-layer, .gcd-gl-control, .ol-search-layer {
+                display: none !important;
             }
         }
         
-        /* ========================================== */
-        /* === ESTILOS PERSONALIZADOS === */
-        /* ========================================== */
         @media (max-width: 768px) {
             .home-button, .measure-button {
                 width: 44px !important;
@@ -282,13 +304,26 @@
             }
         }
         </style>
-        <title>Mapa de Cuba - Recursos Naturales (WGS84)</title>
+        <title>Mapa de Cuba - Recursos Naturales</title>
     </head>
     <body>
         <div id="map">
             <div id="popup" class="ol-popup">
                 <a href="#" id="popup-closer" class="ol-popup-closer"></a>
                 <div id="popup-content"></div>
+            </div>
+        </div>
+        
+        <!-- ========================================== -->
+        <!-- === BÚSQUEDA ALTERNATIVA PARA ANDROID === -->
+        <!-- ========================================== -->
+        <div class="custom-search-container">
+            <div id="custom-search-toggle" class="custom-search-toggle">
+                🔍 Buscar...
+            </div>
+            <div id="custom-search-panel" class="custom-search-panel">
+                <input type="text" id="custom-search-input" placeholder="Escribe el nombre..." autocomplete="off">
+                <div id="custom-search-results" class="custom-search-results"></div>
             </div>
         </div>
         
@@ -347,7 +382,6 @@
         <script>
             proj4.defs('EPSG:4326','+proj=longlat +datum=WGS84 +no_defs');
             proj4.defs("EPSG:3795", "+proj=lcc +lat_1=23 +lat_2=21.7 +lat_0=22.35 +lon_0=-81 +x_0=500000 +y_0=280296.016 +ellps=clrk66 +towgs84=2.478,149.752,197.726,0.526356,0.497970,-0.500831,0.685238 +units=m +no_defs");
-            console.log("✅ Proyecciones definidas: EPSG:4326 y EPSG:3795");
         </script>
         <script src="./resources/functions.js"></script>
         <script src="./resources/ol.js"></script>
@@ -369,92 +403,74 @@
         <script src="./resources/qgis2web.js"></script>        
         
         <!-- ========================================== -->
-        <!-- === REPARACIÓN PARA ANDROID: FORZAR BÚSQUEDA === -->
+        <!-- === BÚSQUEDA ALTERNATIVA: EXTRAER DATOS DE CAPAS === -->
         <!-- ========================================== -->
         <script>
-        (function() {
-            // Esta función fuerza que la búsqueda funcione en táctil
-            function repararBusquedaAndroid() {
-                setTimeout(function() {
-                    var searchInput = document.querySelector('.search-layer-input-search, .gcd-gl-input');
-                    
-                    if (searchInput) {
-                        console.log("🔍 Reparando búsqueda para Android...");
+        // Variables para búsqueda alternativa
+        var searchData = [];
+        var searchLayerNames = [];
+        
+        // Extraer nombres de todas las capas para búsqueda
+        function extraerDatosBusqueda() {
+            console.log("🔍 Extrayendo datos para búsqueda...");
+            
+            // Verificar si existen las capas globales
+            if (typeof map !== 'undefined' && map.getLayers) {
+                var layers = map.getLayers().getArray();
+                layers.forEach(function(layer) {
+                    if (layer.getSource && layer.getSource().getFeatures) {
+                        var source = layer.getSource();
+                        var features = source.getFeatures();
+                        var layerName = layer.get('name') || layer.get('title') || 'Capa';
                         
-                        // Forzar atributos
-                        searchInput.setAttribute('autocomplete', 'off');
-                        searchInput.setAttribute('autocorrect', 'off');
-                        searchInput.setAttribute('autocapitalize', 'none');
-                        searchInput.setAttribute('spellcheck', 'false');
-                        searchInput.style.pointerEvents = 'auto';
-                        
-                        // Eliminar eventos anteriores y re-asignar
-                        var oldInput = searchInput;
-                        var newInput = searchInput.cloneNode(true);
-                        oldInput.parentNode.replaceChild(newInput, oldInput);
-                        searchInput = newInput;
-                        
-                        // Forzar evento input para activar Horsey
-                        searchInput.addEventListener('input', function(e) {
-                            console.log("Input detectado:", this.value);
-                            // Disparar evento personalizado para Horsey
-                            var event = new Event('input', { bubbles: true });
-                            this.dispatchEvent(event);
-                        });
-                        
-                        searchInput.addEventListener('focus', function(e) {
-                            console.log("Focus en búsqueda");
-                            // Si ya hay texto, forzar la búsqueda
-                            if (this.value.length > 0) {
-                                var event = new Event('input', { bubbles: true });
-                                this.dispatchEvent(event);
+                        features.forEach(function(feature) {
+                            var props = feature.getProperties();
+                            // Buscar campos que puedan contener nombres
+                            var posiblesCampos = ['NOMBRE', 'NOMBRE_1', 'name', 'Name', 'NOM', 'DESCRIP', 'YACIMIENTO', 'CUENCA', 'AREA'];
+                            var nombre = null;
+                            
+                            for (var i = 0; i < posiblesCampos.length; i++) {
+                                if (props[posiblesCampos[i]]) {
+                                    nombre = props[posiblesCampos[i]];
+                                    break;
+                                }
+                            }
+                            
+                            if (nombre && typeof nombre === 'string') {
+                                searchData.push({
+                                    nombre: nombre,
+                                    geometry: feature.getGeometry(),
+                                    capa: layerName
+                                });
                             }
                         });
-                        
-                        searchInput.addEventListener('touchstart', function(e) {
-                            console.log("Touch en búsqueda");
-                            // No prevenir para permitir foco
-                        }, { passive: true });
-                        
-                        console.log("✅ Búsqueda reparada para Android");
-                    } else {
-                        console.log("⏳ Buscando campo de búsqueda...");
-                        setTimeout(repararBusquedaAndroid, 500);
                     }
-                }, 1000);
+                });
             }
             
-            // También asegurar que el mapa esté listo
-            function esperarMapa() {
-                if (typeof map !== 'undefined') {
-                    console.log("Mapa listo - reparando búsqueda");
-                    repararBusquedaAndroid();
-                } else {
-                    setTimeout(esperarMapa, 300);
-                }
-            }
-            
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', esperarMapa);
-            } else {
-                esperarMapa();
-            }
-        })();
-        </script>
+            console.log("✅ Datos extraídos:", searchData.length, "elementos");
+        }
         
-        <!-- ========================================== -->
-        <!-- === PERSONALIZACIONES COMPLETAS === -->
-        <!-- ========================================== -->
-        <script>
-        // ============================================
-        // VARIABLES GLOBALES
-        // ============================================
-        var mostrarCubaNorte = false;
-        var measureToolActive = false;
-        var drawInteraction = null;
-        var measureSource = null;
-        var measureLayer = null;
-        var currentMeasureType = 'line';
+        // Función de búsqueda
+        function buscarEnCapas(texto) {
+            if (!texto || texto.length < 2) return [];
+            var textoLower = texto.toLowerCase();
+            return searchData.filter(function(item) {
+                return item.nombre.toLowerCase().includes(textoLower);
+            }).slice(0, 20); // Máximo 20 resultados
+        }
+        
+        // Centrar mapa en una geometría
+        function centrarEnGeometria(geometry) {
+            if (geometry.getType() === 'Point') {
+                var coords = geometry.getCoordinates();
+                map.getView().setCenter(coords);
+                map.getView().setZoom(12);
+            } else {
+                var extent = geometry.getExtent();
+                map.getView().fit(extent, { padding: [50, 50, 50, 50] });
+            }
+        }
         
         // ============================================
         // FUNCIONES DE FORMATEO
@@ -509,6 +525,13 @@
         // ============================================
         // FUNCIONES DE MEDICIÓN
         // ============================================
+        
+        var mostrarCubaNorte = false;
+        var measureToolActive = false;
+        var drawInteraction = null;
+        var measureSource = null;
+        var measureLayer = null;
+        var currentMeasureType = 'line';
         
         function crearHerramientaMedicion() {
             measureSource = new ol.source.Vector();
@@ -607,7 +630,6 @@
             }
             
             map.getTargetElement().style.cursor = 'crosshair';
-            console.log("📏 Herramienta de medición activada:", tipo);
         }
         
         function desactivarMedicion() {
@@ -623,7 +645,6 @@
             }
             
             map.getTargetElement().style.cursor = '';
-            console.log("📏 Herramienta de medición desactivada");
         }
         
         function limpiarMediciones() {
@@ -698,10 +719,13 @@
                 return;
             }
             
-            console.log("✅ Mapa inicializado en WGS84 (EPSG:4326)");
+            console.log("✅ Mapa inicializado");
             
             crearHerramientaMedicion();
             desactivarMedicion();
+            
+            // Extraer datos para búsqueda después de que las capas estén cargadas
+            setTimeout(extraerDatosBusqueda, 1000);
             
             map.on('click', function(evt) {
                 if (measureToolActive) return;
@@ -783,7 +807,63 @@
             
             document.getElementById('coordenadas-panel').innerHTML = 
                 '📍 Toca el mapa - WGS84 (EPSG:4326)<br>' +
-                '🔄 Botón inferior: Cuba Norte | 📏 Botón arriba derecha: Medir';
+                '🔍 Botón izquierdo superior: Búsqueda | 📏 Botón derecho: Medir';
+                
+            // Configurar búsqueda alternativa
+            configurarBusquedaAlternativa();
+        }
+        
+        function configurarBusquedaAlternativa() {
+            var toggleBtn = document.getElementById('custom-search-toggle');
+            var panel = document.getElementById('custom-search-panel');
+            var searchInput = document.getElementById('custom-search-input');
+            var resultsDiv = document.getElementById('custom-search-results');
+            
+            if (!toggleBtn || !panel) return;
+            
+            toggleBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (panel.style.display === 'flex') {
+                    panel.style.display = 'none';
+                } else {
+                    panel.style.display = 'flex';
+                    searchInput.focus();
+                }
+            });
+            
+            searchInput.addEventListener('input', function(e) {
+                var texto = this.value;
+                if (texto.length < 2) {
+                    resultsDiv.innerHTML = '';
+                    return;
+                }
+                
+                var resultados = buscarEnCapas(texto);
+                resultsDiv.innerHTML = '';
+                
+                if (resultados.length === 0) {
+                    resultsDiv.innerHTML = '<div style="color:#aaa; text-align:center;">No hay resultados</div>';
+                } else {
+                    resultados.forEach(function(res) {
+                        var div = document.createElement('div');
+                        div.innerHTML = res.nombre + ' <span style="font-size:10px; color:#aaa;">(' + res.capa + ')</span>';
+                        div.addEventListener('click', function() {
+                            centrarEnGeometria(res.geometry);
+                            panel.style.display = 'none';
+                            searchInput.value = '';
+                            resultsDiv.innerHTML = '';
+                        });
+                        resultsDiv.appendChild(div);
+                    });
+                }
+            });
+            
+            // Cerrar panel al tocar fuera
+            document.addEventListener('click', function(e) {
+                if (!panel.contains(e.target) && e.target !== toggleBtn) {
+                    panel.style.display = 'none';
+                }
+            });
         }
         
         if (document.readyState === 'loading') {
