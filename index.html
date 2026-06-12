@@ -6,6 +6,9 @@
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="description" content="Visualizador cartográfico de recursos naturales de Cuba - Yacimientos metálicos y no metálicos">
+        <meta name="author" content="Sistema de Información Geográfica - Cuba">
+        
         <link rel="stylesheet" href="./resources/ol.css">
         <link rel="stylesheet" href="resources/fontawesome-all.min.css">
         <link rel="stylesheet" type="text/css" href="resources/horsey.min.css">
@@ -15,27 +18,74 @@
         <link rel="stylesheet" href="./resources/qgis2web.css">
         
         <style>
+        /* ========================================== */
+        /* VARIABLES GLOBALES - FÁCIL MANTENIMIENTO  */
+        /* ========================================== */
+        :root {
+            /* Colores principales */
+            --color-primary: #ffd966;
+            --color-primary-dark: #ffaa33;
+            --color-primary-light: #ffe0a3;
+            --color-bg-dark: rgba(0, 0, 0, 0.85);
+            --color-bg-medium: rgba(0, 0, 0, 0.75);
+            --color-bg-light: rgba(0, 0, 0, 0.65);
+            --color-text: #ffffff;
+            --color-text-secondary: #aaaaaa;
+            
+            /* Tamaños de botones */
+            --btn-size-desktop: 30px;
+            --btn-size-mobile: 38px;
+            --btn-icon-size-desktop: 14px;
+            --btn-icon-size-mobile: 20px;
+            
+            /* Bordes y sombras */
+            --border-radius-sm: 6px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 30px;
+            --border-radius-xl: 40px;
+            --shadow-default: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.3);
+            
+            /* Z-index layers */
+            --z-map: 1;
+            --z-controls: 10000;
+            --z-measure: 10003;
+            --z-search: 10020;
+            --z-title: 10030;
+            
+            /* Transiciones */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.2s ease;
+        }
+        
+        /* Reset básico */
         html, body {
             background-color: #ffffff;
         }
+        
         .ol-control > * {
-            background-color: #f8f8f8!important;
-            color: #444444!important;
+            background-color: #f8f8f8 !important;
+            color: #444444 !important;
             border-radius: 0px;
         }
+        
         .ol-attribution a, .gcd-gl-input::placeholder, .search-layer-input-search::placeholder {
-            color: #444444!important;
+            color: #444444 !important;
         }
+        
         .search-layer-input-search {
-            background-color: #f8f8f8!important;
+            background-color: #f8f8f8 !important;
         }
+        
         .ol-control > *:focus, .ol-control >*:hover {
-            background-color: rgba(248, 248, 248, 0.7)!important;
+            background-color: rgba(248, 248, 248, 0.7) !important;
         } 
+        
         .ol-control {
             background-color: rgba(255,255,255,.4) !important;
             padding: 2px !important;
         } 
+        
         html, body, #map {
             width: 100%;
             height: 100%;
@@ -51,23 +101,23 @@
         }
         
         /* ========================================== */
-        /* === BÚSQUEDA UNIFICADA (DEBAJO DE CONTROLES ZOOM) === */
+        /* === BÚSQUEDA UNIFICADA === */
         /* ========================================== */
         .custom-search-container {
             position: absolute;
             top: 65px;
             left: 10px;
-            z-index: 10020;
+            z-index: var(--z-search);
             display: flex;
             flex-direction: column;
             gap: 2px;
         }
         
         .custom-search-toggle {
-            background: rgba(0,0,0,0.85);
-            color: #ffd966;
-            border: 1px solid #ffd966;
-            border-radius: 30px;
+            background: var(--color-bg-dark);
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            border-radius: var(--border-radius-lg);
             padding: 5px 10px;
             font-size: 8px;
             cursor: pointer;
@@ -77,17 +127,34 @@
             align-items: center;
             gap: 2px;
             width: fit-content;
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
         }
         
         .custom-search-toggle:hover {
-            background: rgba(255, 217, 102, 0.9);
+            background: var(--color-primary);
             color: #000;
             border-color: #000;
+            transform: scale(1.02);
+        }
+        
+        /* Indicador de carga para búsqueda */
+        .search-loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-left: 8px;
+            border: 2px solid var(--color-primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         .custom-search-panel {
-            background: rgba(0,0,0,0.95);
+            background: var(--color-bg-dark);
             border-radius: 12px;
             padding: 12px;
             display: none;
@@ -95,25 +162,27 @@
             gap: 10px;
             min-width: 280px;
             backdrop-filter: blur(4px);
-            border: 1px solid #ffd966;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid var(--color-primary);
+            box-shadow: var(--shadow-default);
         }
         
         .custom-search-panel input {
             background: rgba(255,255,255,0.95);
-            border: 1px solid #ffd966;
+            border: 1px solid var(--color-primary);
             border-radius: 25px;
             padding: 12px 16px;
             font-size: 16px;
             color: #333;
             touch-action: manipulation;
             width: calc(100% - 32px);
+            transition: all var(--transition-fast);
         }
         
         .custom-search-panel input:focus {
             outline: none;
-            border-color: #ffaa33;
+            border-color: var(--color-primary-dark);
             background: #fff;
+            box-shadow: 0 0 0 2px rgba(255, 217, 102, 0.2);
         }
         
         .custom-search-results {
@@ -125,44 +194,60 @@
         .custom-search-results div {
             padding: 10px 12px;
             border-bottom: 1px solid rgba(255,217,102,0.3);
-            color: #ffd966;
+            color: var(--color-primary);
             cursor: pointer;
             touch-action: manipulation;
             font-size: 14px;
-            transition: background 0.1s;
+            transition: all var(--transition-fast);
         }
         
         .custom-search-results div:hover {
             background: rgba(255,217,102,0.2);
+            transform: translateX(2px);
         }
         
         .custom-search-results div:active {
             background: rgba(255,217,102,0.4);
         }
         
+        /* Mensaje de "No hay resultados" mejorado */
+        .no-results-message {
+            text-align: center;
+            padding: 20px !important;
+            color: var(--color-text-secondary) !important;
+            font-style: italic;
+            cursor: default !important;
+        }
+        
+        .no-results-message:hover {
+            background: transparent !important;
+            transform: none !important;
+        }
+        
         /* ========================================== */
-        /* === PANEL DE MEDICIÓN CENTRADO === */
+        /* === PANEL DE MEDICIÓN === */
         /* ========================================== */
         .measure-panel {
             position: absolute;
             top: 55px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.92);
-            color: #ffd966;
+            background: var(--color-bg-dark);
+            color: var(--color-primary);
             padding: 10px 20px;
-            border-radius: 40px;
+            border-radius: var(--border-radius-xl);
             font-size: 14px;
             font-family: monospace;
             font-weight: bold;
-            z-index: 10003;
-            border: 1px solid #ffd966;
+            z-index: var(--z-measure);
+            border: 1px solid var(--color-primary);
             backdrop-filter: blur(4px);
             pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            box-shadow: var(--shadow-default);
             white-space: nowrap;
             text-align: center;
             letter-spacing: 0.5px;
+            transition: opacity var(--transition-normal);
         }
         
         /* ========================================== */
@@ -172,44 +257,46 @@
             position: absolute;
             top: 10px;
             left: 50px;
-            z-index: 10002;
+            z-index: var(--z-controls);
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
         
         .custom-controls .control-btn {
-            background-color: rgba(0,0,0,0.8);
-            color: #ffd966;
-            width: 30px;
-            height: 30px;
+            background-color: var(--color-bg-dark);
+            color: var(--color-primary);
+            width: var(--btn-size-desktop);
+            height: var(--btn-size-desktop);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
+            border-radius: var(--border-radius-md);
             cursor: pointer;
-            font-size: 14px;
-            border: 1px solid #ffd966;
-            transition: all 0.2s;
+            font-size: var(--btn-icon-size-desktop);
+            border: 1px solid var(--color-primary);
+            transition: all var(--transition-normal);
             backdrop-filter: blur(2px);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow-light);
             touch-action: manipulation;
         }
         
         .custom-controls .control-btn:hover {
-            background-color: rgba(255, 217, 102, 0.9);
+            background-color: var(--color-primary);
             color: #000;
             border-color: #000;
+            transform: scale(1.05);
         }
         
         .custom-controls .control-btn.active {
-            background-color: #ffd966;
+            background-color: var(--color-primary);
             color: #000;
             border-color: #000;
+            box-shadow: 0 0 0 2px rgba(255, 217, 102, 0.3);
         }
         
         /* ========================================== */
-        /* === CONTROL DE CAPAS MÁS PEQUEÑO === */
+        /* === CONTROL DE CAPAS === */
         /* ========================================== */
         .layer-switcher button {
             width: 24px !important;
@@ -243,7 +330,7 @@
         .layer-switcher input[type="checkbox"] {
             width: 10px !important;
             height: 10px !important;
-            margin-right:4px !important;
+            margin-right: 4px !important;
             transform: scale(0.9) !important;
         }
         
@@ -265,16 +352,17 @@
             position: absolute;
             bottom: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.85);
-            color: #ffd966;
+            background: var(--color-bg-dark);
+            color: var(--color-primary);
             padding: 6px 12px;
-            border-radius: 8px;
+            border-radius: var(--border-radius-sm);
             font-size: 10px;
             font-family: monospace;
-            z-index: 10000;
-            border-left: 3px solid #ffd966;
+            z-index: var(--z-controls);
+            border-left: 3px solid var(--color-primary);
             pointer-events: none;
             backdrop-filter: blur(2px);
+            transition: all var(--transition-fast);
         }
         
         /* ========================================== */
@@ -285,20 +373,20 @@
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10001;
+            z-index: var(--z-controls);
             display: flex;
             gap: 8px;
             align-items: center;
         }
         
         .toggle-coords-btn, .clear-measure-btn {
-            background: rgba(0,0,0,0.85);
-            color: #ffd966;
-            border: 1px solid #ffd966;
+            background: var(--color-bg-dark);
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
             cursor: pointer;
             font-family: monospace;
             backdrop-filter: blur(2px);
-            transition: all 0.2s;
+            transition: all var(--transition-normal);
             touch-action: manipulation;
         }
         
@@ -316,9 +404,10 @@
         }
         
         .toggle-coords-btn:hover, .clear-measure-btn:hover {
-            background: rgba(255, 217, 102, 0.9);
+            background: var(--color-primary);
             color: #000;
             border-color: #000;
+            transform: scale(1.02);
         }
         
         /* ========================================== */
@@ -328,17 +417,17 @@
             position: fixed;
             bottom: 10px;
             right: 10px;
-            z-index: 10001;
+            z-index: var(--z-controls);
             display: flex;
             gap: 8px;
             align-items: center;
         }
         
         .scale-text {
-            background-color: rgba(0,0,0,0.75);
+            background-color: var(--color-bg-medium);
             padding: 3px 10px;
-            border-radius: 6px;
-            color: #ffd966;
+            border-radius: var(--border-radius-sm);
+            color: var(--color-primary);
             font-size: 10px;
             font-family: monospace;
             pointer-events: none;
@@ -346,26 +435,27 @@
         }
         
         .home-button {
-            background-color: rgba(0,0,0,0.8);
-            color: #ffd966;
-            width: 30px;
-            height: 30px;
+            background-color: var(--color-bg-dark);
+            color: var(--color-primary);
+            width: var(--btn-size-desktop);
+            height: var(--btn-size-desktop);
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 36px;
             cursor: pointer;
             font-size: 18px;
-            border: 1px solid #ffd966;
-            transition: all 0.2s;
+            border: 1px solid var(--color-primary);
+            transition: all var(--transition-normal);
             backdrop-filter: blur(2px);
             touch-action: manipulation;
         }
         
         .home-button:hover {
-            background-color: rgba(255, 217, 102, 0.9);
+            background-color: var(--color-primary);
             color: #000;
             border-color: #000;
+            transform: scale(1.05);
         }
         
         /* ========================================== */
@@ -376,34 +466,78 @@
             top: 5px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            color: #ffd966;
+            background: var(--color-bg-dark);
+            color: var(--color-primary);
             padding: 8px 16px;
-            border-radius: 30px;
+            border-radius: var(--border-radius-lg);
             font-size: 12px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-weight: 500;
             text-align: center;
-            z-index: 10030;
+            z-index: var(--z-title);
             backdrop-filter: blur(4px);
-            border: 1px solid #ffd966;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--color-primary);
+            box-shadow: var(--shadow-default);
             white-space: nowrap;
             pointer-events: none;
         }
         
         /* ========================================== */
-        /* === RESPONSIVE - VERSIÓN MÓVIL SIMPLIFICADA === */
+        /* === TOAST NOTIFICATIONS === */
+        /* ========================================== */
+        .toast-notification {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--color-bg-dark);
+            color: var(--color-primary);
+            padding: 8px 16px;
+            border-radius: var(--border-radius-lg);
+            font-size: 12px;
+            font-family: monospace;
+            z-index: 10050;
+            border: 1px solid var(--color-primary);
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+            animation: fadeInUp 0.3s ease, fadeOut 0.3s ease 2.7s;
+            white-space: nowrap;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+            }
+        }
+        
+        /* ========================================== */
+        /* === RESPONSIVE - VERSIÓN MÓVIL === */
         /* ========================================== */
         @media (max-width: 768px) {
-            /* Ocultar todo excepto coordenadas, búsqueda y título */
+            /* Ocultar elementos no esenciales en móvil */
             .bottom-buttons,
-            .bottom-right,
-            .custom-controls {
+            .bottom-right {
                 display: none !important;
             }
             
-            /* Ajustar búsqueda para móvil */
+            /* Ajustar tamaños para móvil */
+            .custom-controls .control-btn {
+                width: var(--btn-size-mobile) !important;
+                height: var(--btn-size-mobile) !important;
+                font-size: var(--btn-icon-size-mobile) !important;
+            }
+            
             .custom-search-container {
                 top: 45px !important;
                 left: 5px !important;
@@ -414,7 +548,6 @@
                 font-size: 9px !important;
             }
             
-            /* Panel de coordenadas más pequeño */
             .coords-panel {
                 font-size: 8px !important;
                 padding: 3px 6px !important;
@@ -424,7 +557,6 @@
                 border-left-width: 2px !important;
             }
             
-            /* Título más pequeño en móvil */
             .titulo-mapa {
                 font-size: 8px !important;
                 padding: 3px 8px !important;
@@ -434,7 +566,6 @@
                 line-height: 1.3 !important;
             }
             
-            /* Panel de medición más pequeño */
             .measure-panel {
                 top: 50px !important;
                 font-size: 10px !important;
@@ -443,7 +574,6 @@
                 white-space: nowrap !important;
             }
             
-            /* Controles de capas más pequeños */
             .layer-switcher button {
                 width: 28px !important;
                 height: 28px !important;
@@ -453,6 +583,12 @@
                 max-width: 140px !important;
                 font-size: 9px !important;
             }
+            
+            .toast-notification {
+                font-size: 10px !important;
+                padding: 6px 12px !important;
+                bottom: 70px !important;
+            }
         }
         </style>
         <title>Mapa de Cuba - Recursos Naturales</title>
@@ -460,6 +596,36 @@
     <body>
 
 <div id="map">
+    <!-- ========================================== -->
+    <!-- MAPA DE RECURSOS NATURALES DE CUBA v1.0    -->
+    <!-- ========================================== -->
+    <!-- 
+    📋 DESCRIPCIÓN:
+    Visualizador cartográfico de yacimientos metálicos y no metálicos
+    en Cuba. Desarrollado con OpenLayers 6 y QGIS2Web.
+    
+    🗺️ CAPAS INCLUIDAS:
+    - Áreas Protegidas
+    - Cuencas de Interés Nacional  
+    - Yacimientos No Metálicos
+    - Yacimientos Metálicos (excluye oro y níquel)
+    
+    🛠️ FUNCIONALIDADES:
+    - Búsqueda de lugares por nombre
+    - Medición de distancias y áreas
+    - Cambio de sistema de coordenadas (WGS84 / Cuba Norte EPSG:3795)
+    - Escala dinámica
+    
+    📱 RESPONSIVE:
+    - Escritorio: Funcionalidad completa
+    - Móvil: Interfaz simplificada
+    
+    🔗 DEPENDENCIAS:
+    - OpenLayers 6.5.0
+    - Proj4js
+    - QGIS2Web recursos locales
+    -->
+    
     <!-- TÍTULO SUPERIOR INFORMATIVO -->
     <div id="titulo-informativo" class="titulo-mapa">
         📊 Recursos de yacimientos no metálicos y metálicos (excepto oro y níquel). Consultar ONRM para más información
@@ -501,10 +667,10 @@
         
         <!-- BOTONES INFERIORES CENTRO (visibles solo en escritorio) -->
         <div class="bottom-buttons">
-            <button id="toggle-coords" class="toggle-coords-btn">
+            <button id="toggle-coords" class="toggle-coords-btn" title="Cambiar entre WGS84 y Cuba Norte (EPSG:3795)">
                 🔄 Mostrar Cuba Norte
             </button>
-            <button id="clear-measure" class="clear-measure-btn">
+            <button id="clear-measure" class="clear-measure-btn" title="Limpiar todas las mediciones">
                 🗑️ Limpiar
             </button>
         </div>
@@ -512,7 +678,7 @@
         <!-- ESCALA Y BOTÓN INICIO (visibles solo en escritorio) -->
         <div class="bottom-right">
             <div id="escala-texto" class="scale-text">📏 1:10.000</div>
-            <div id="boton-inicio" class="home-button">🏠</div>
+            <div id="boton-inicio" class="home-button" title="Centrar mapa en Cuba">🏠</div>
         </div>
         
         <!-- SCRIPTS ORIGINALES DE QGIS2WEB -->
@@ -553,11 +719,53 @@
         var measureLayer = null;
         var currentMeasureType = 'line';
         var searchData = [];
+        var searchTimeout = null; // Para debounce en búsqueda
+        
+        // ============================================
+        // FUNCIÓN PARA MOSTRAR NOTIFICACIONES (TOAST)
+        // ============================================
+        
+        /**
+         * Muestra una notificación temporal en pantalla
+         * @param {string} mensaje - Texto a mostrar
+         * @param {string} tipo - 'success', 'error', 'info' (opcional)
+         */
+        function mostrarNotificacion(mensaje, tipo) {
+            // Eliminar notificaciones existentes
+            var notificacionesExistentes = document.querySelectorAll('.toast-notification');
+            notificacionesExistentes.forEach(function(notif) {
+                notif.remove();
+            });
+            
+            var toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            
+            // Icono según tipo
+            var icono = 'ℹ️';
+            if (tipo === 'success') icono = '✅';
+            if (tipo === 'error') icono = '❌';
+            
+            toast.innerHTML = icono + ' ' + mensaje;
+            document.body.appendChild(toast);
+            
+            // Eliminar después de 3 segundos
+            setTimeout(function() {
+                if (toast && toast.remove) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
         
         // ============================================
         // FUNCIONES DE FORMATEO
         // ============================================
         
+        /**
+         * Convierte coordenadas a formato Grados Decimales
+         * @param {number} valor - Coordenada en grados decimales
+         * @param {boolean} esLon - True si es longitud, false si es latitud
+         * @returns {string} Formato: "XX.XXXXX° N/E/S/O"
+         */
         function formatearGradosDecimales(valor, esLon) {
             var direccion = '';
             if (esLon) {
@@ -568,6 +776,12 @@
             return Math.abs(valor).toFixed(5) + '° ' + direccion;
         }
         
+        /**
+         * Convierte coordenadas a formato Grados, Minutos, Segundos
+         * @param {number} valor - Coordenada en grados decimales
+         * @param {boolean} esLon - True si es longitud, false si es latitud
+         * @returns {string} Formato: "XX° XX' XX.X\" N/E/S/O"
+         */
         function formatearGradosMinutosSegundos(valor, esLon) {
             var absValor = Math.abs(valor);
             var grados = Math.floor(absValor);
@@ -584,10 +798,20 @@
             return grados + '° ' + minutos + "' " + segundos.toFixed(1) + '" ' + direccion;
         }
         
+        /**
+         * Formatea números con separadores de miles
+         * @param {number} valor - Número a formatear
+         * @returns {string} Número formateado
+         */
         function formatearNumero(valor) {
             return Math.round(valor).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
         
+        /**
+         * Formatea distancias en metros o kilómetros
+         * @param {number} distancia - Distancia en metros
+         * @returns {string} Distancia formateada
+         */
         function formatearDistancia(distancia) {
             if (distancia >= 1000) {
                 return (distancia / 1000).toFixed(2) + ' km';
@@ -595,6 +819,11 @@
             return distancia.toFixed(1) + ' m';
         }
         
+        /**
+         * Formatea áreas en m², ha o km²
+         * @param {number} area - Área en metros cuadrados
+         * @returns {string} Área formateada
+         */
         function formatearArea(area) {
             if (area >= 1000000) {
                 return (area / 1000000).toFixed(2) + ' km²';
@@ -644,6 +873,9 @@
             }
             
             console.log("✅ Datos extraídos:", searchData.length, "elementos");
+            if (searchData.length === 0) {
+                mostrarNotificacion('No se encontraron datos para búsqueda', 'error');
+            }
         }
         
         function buscarEnCapas(texto) {
@@ -655,13 +887,30 @@
         }
         
         function centrarEnGeometria(geometry) {
-            if (geometry.getType() === 'Point') {
-                var coords = geometry.getCoordinates();
-                map.getView().setCenter(coords);
-                map.getView().setZoom(12);
-            } else {
-                var extent = geometry.getExtent();
-                map.getView().fit(extent, { padding: [50, 50, 50, 50] });
+            if (!geometry) {
+                console.warn('⚠️ Geometría no válida');
+                mostrarNotificacion('Error: geometría no válida', 'error');
+                return;
+            }
+            
+            try {
+                if (geometry.getType() === 'Point') {
+                    var coords = geometry.getCoordinates();
+                    if (coords && coords.length === 2) {
+                        map.getView().setCenter(coords);
+                        map.getView().setZoom(12);
+                        mostrarNotificacion('📍 Ubicación encontrada', 'success');
+                    }
+                } else {
+                    var extent = geometry.getExtent();
+                    if (extent && !isNaN(extent[0])) {
+                        map.getView().fit(extent, { padding: [50, 50, 50, 50] });
+                        mostrarNotificacion('🗺️ Área encontrada', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error centrando geometría:', error);
+                mostrarNotificacion('Error al centrar el elemento', 'error');
             }
         }
         
@@ -735,9 +984,11 @@
                 if (tipo === 'line') {
                     var length = ol.sphere.getLength(geometry, {projection: map.getView().getProjection()});
                     output = '📏 ' + formatearDistancia(length);
+                    mostrarNotificacion('📏 Distancia medida: ' + formatearDistancia(length), 'success');
                 } else {
                     var area = ol.sphere.getArea(geometry, {projection: map.getView().getProjection()});
                     output = '📐 ' + formatearArea(area);
+                    mostrarNotificacion('📐 Área medida: ' + formatearArea(area), 'success');
                 }
                 
                 var panel = document.getElementById('measure-panel');
@@ -766,6 +1017,9 @@
             }
             
             map.getTargetElement().style.cursor = 'crosshair';
+            
+            var mensaje = tipo === 'line' ? '✅ Modo medición: dibuja una línea' : '✅ Modo medición: dibuja un polígono';
+            mostrarNotificacion(mensaje, 'info');
         }
         
         function desactivarMedicion() {
@@ -793,6 +1047,7 @@
             if (measureToolActive) {
                 desactivarMedicion();
             }
+            mostrarNotificacion('🧹 Mediciones limpiadas', 'info');
         }
         
         function mostrarMenuMedicion() {
@@ -846,7 +1101,7 @@
         }
         
         // ============================================
-        // CONFIGURAR BÚSQUEDA UNIFICADA
+        // CONFIGURAR BÚSQUEDA UNIFICADA CON FEEDBACK
         // ============================================
         
         function configurarBusqueda() {
@@ -869,30 +1124,40 @@
             
             searchInput.addEventListener('input', function(e) {
                 var texto = this.value;
+                
+                // Limpiar timeout anterior
+                if (searchTimeout) clearTimeout(searchTimeout);
+                
                 if (texto.length < 2) {
                     resultsDiv.innerHTML = '';
                     return;
                 }
                 
-                var resultados = buscarEnCapas(texto);
-                resultsDiv.innerHTML = '';
+                // Mostrar indicador de carga
+                resultsDiv.innerHTML = '<div class="search-loading" style="margin: 20px auto;"></div>';
                 
-                if (resultados.length === 0) {
-                    resultsDiv.innerHTML = '<div style="color:#aaa; text-align:center;">No hay resultados</div>';
-                } else {
-                    resultados.forEach(function(res) {
-                        var div = document.createElement('div');
-                        div.innerHTML = res.nombre + ' <span style="font-size:10px; color:#aaa;">(' + res.capa + ')</span>';
-                        div.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            centrarEnGeometria(res.geometry);
-                            panel.style.display = 'none';
-                            searchInput.value = '';
-                            resultsDiv.innerHTML = '';
+                // Debounce para evitar búsquedas excesivas
+                searchTimeout = setTimeout(function() {
+                    var resultados = buscarEnCapas(texto);
+                    resultsDiv.innerHTML = '';
+                    
+                    if (resultados.length === 0) {
+                        resultsDiv.innerHTML = '<div class="no-results-message">🔍 No hay resultados para "' + texto + '"</div>';
+                    } else {
+                        resultados.forEach(function(res) {
+                            var div = document.createElement('div');
+                            div.innerHTML = res.nombre + ' <span style="font-size:10px; color:#aaa;">(' + res.capa + ')</span>';
+                            div.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                centrarEnGeometria(res.geometry);
+                                panel.style.display = 'none';
+                                searchInput.value = '';
+                                resultsDiv.innerHTML = '';
+                            });
+                            resultsDiv.appendChild(div);
                         });
-                        resultsDiv.appendChild(div);
-                    });
-                }
+                    }
+                }, 300);
             });
             
             document.addEventListener('click', function(e) {
@@ -904,7 +1169,7 @@
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter' && resultsDiv.firstChild) {
                     var firstResult = resultsDiv.firstChild;
-                    if (firstResult && firstResult.click) {
+                    if (firstResult && firstResult.click && !firstResult.classList.contains('no-results-message')) {
                         firstResult.click();
                     }
                 }
@@ -922,6 +1187,7 @@
             }
             
             console.log("✅ Mapa inicializado");
+            mostrarNotificacion('🗺️ Mapa cargado correctamente', 'success');
             
             crearHerramientaMedicion();
             desactivarMedicion();
@@ -968,6 +1234,8 @@
                     if (center) {
                         actualizarPanelCoordenadas(center[0], center[1]);
                     }
+                    var mensaje = mostrarCubaNorte ? '🔄 Formato: Cuba Norte (EPSG:3795)' : '🔄 Formato: WGS84';
+                    mostrarNotificacion(mensaje, 'info');
                 };
             }
             
@@ -977,6 +1245,7 @@
                     map.getView().setCenter([-79.0, 21.5]);
                     map.getView().setZoom(6);
                     actualizarPanelCoordenadas(-79.0, 21.5);
+                    mostrarNotificacion('🏠 Vista centrada en Cuba', 'success');
                 };
             }
             
